@@ -1,11 +1,32 @@
 import express from "express"; // Import Express framework
 const app = express(); // Create an Express application
 import "dotenv/config";
+import logger from "./logger.js"; // Import the custom logger
+import morgan from "morgan";
 
 const port = process.env.PORT; // Get the port number from environment variables
+// �� Logger Middleware
+const morganFormat = ":method :url :status :response-time ms"; // Define the log format
 
 app.use(express.json()); // Middleware to parse JSON request bodies
 
+// �� Custom logger middleware
+// �� This middleware logs the request method, URL, status code, and response time
+app.use(
+  morgan(morganFormat, {
+    stream: {
+      write: message => {
+        const logObject = {
+          method: message.split(" ")[0],
+          url: message.split(" ")[1],
+          status: message.split(" ")[2],
+          responseTime: message.split(" ")[3]
+        };
+        logger.info(JSON.stringify(logObject));
+      }
+    }
+  })
+);
 // Sample in-memory database (array) to store tea data
 let teaData = [];
 let nextId = 1; // Counter to assign unique IDs
@@ -22,6 +43,7 @@ app.get("/ice-tea", (req, res) => {
 
 // ✅ Create a new tea (POST request)
 app.post("/teas", (req, res) => {
+  logger.info("A Post Request was made!");
   const { name, price } = req.body;
 
   // 🔹 Validate the request data (name must be a string, price must be a number)
@@ -84,6 +106,7 @@ app.put("/teas/:id", (req, res) => {
 
 // ✅ Delete a tea by ID (DELETE request)
 app.delete("/teas/:id", (req, res) => {
+  logger.warn("A Delete Request was made!");
   const teaId = parseInt(req.params.id); // Convert ID from string to number
   const myTeaIndex = teaData.findIndex(tea => tea.id === teaId); // Find index of tea with matching ID
 
